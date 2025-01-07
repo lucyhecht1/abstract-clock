@@ -1,4 +1,4 @@
-let ballX, ballY; 
+let ballX, ballY;
 let soccerBalls = [];
 let ballBag = [];
 let hoopX, hoopY;
@@ -7,32 +7,22 @@ let lastMinute; // To track when the minute changes
 let lastHour; // To track when the hour changes
 
 function setup() {
-    createCanvas(800, 600); 
+    createCanvas(800, 600);
     ballX = 50; // Starting position of the basketball
-    ballY = height / 3; 
+    ballY = height / 3;
     hoopX = width - 100; // Position of the hoop
     hoopY = height / 2.5;
     goalX = width - 215; // Soccer goal position 
     goalY = height - 220;
 
-    lastMinute = minute(); 
+    // Update time tracking variables before any game state initialization that might depend on them
+    lastMinute = minute();
     lastHour = hour();
 
-    // Initialize the bag of 60 balls with random positions inside the bag
-    let currentMinute = minute()
-    for (let i = 0; i < 60 - currentMinute; i++) {
-        let x, y;
+    refillBag();
 
-        // Ensure the ball is within the bag boundaries
-        do {
-            x = random(78, 258); // Horizontal range 
-            y = random(height - 130, height - 65); // Vertical range 
-        } while (!isInsideBag(x, y));
-
-        ballBag.push({ x, y });
-    }
-
-    // Initialize the soccer goal with 'currentMinute' number of balls
+    // Ensure that the initialization of soccer balls only happens after the time tracking variables are set
+    let currentMinute = minute();
     for (let i = 0; i < currentMinute; i++) {
         let x = random(goalX + 10, goalX + 180); // Random x position within the goal
         let y = random(goalY + 10, goalY + 130); // Random y position within the goal
@@ -40,53 +30,65 @@ function setup() {
     }
 }
 
-let movingBall = null; 
+let movingBall = null;
 let glideStartTime = null;
-let glideDuration = 1; 
+let glideDuration = 1;
 
 function draw() {
     background(30); // Background color
     drawTitle();
-    drawHoop(); 
-    drawGoal(); 
-    drawBall(); 
+    drawHoop();
+    drawGoal();
+    drawBall();
     drawBagBalls();
     drawBag();
     drawSoccerBalls();
-    drawCrowd(); 
+    drawCrowd();
 
-
-    let currentMinute = minute(); 
-    let currentHour = hour(); 
+    let currentMinute = minute();
+    let currentHour = hour();
     let currentSecond = second();
-
-    // Reset soccer goal and refill the bag if the hour changes
-    if (currentHour !== lastHour) {
-        lastHour = currentHour;
-        soccerBalls = []; // Clear all soccer balls
-        refillBag(); // Refill the bag with 59 balls
-    }
 
     // Trigger gliding when the minute changes
     if (currentMinute !== lastMinute) {
         lastMinute = currentMinute; // Update the last minute
         console.log(currentMinute); // Print the current minute to the console
-        if (ballBag.length > 0) {
-            glideStartTime = millis(); 
-            movingBall = ballBag.pop(); 
-            movingBall.targetX = random(goalX + 10, goalX + 180); 
-            movingBall.targetY = random(goalY + 10, goalY + 130); 
+
+        if (ballBag.length > 1) {
+            glideStartTime = millis();
+            movingBall = ballBag.pop();
+            movingBall.targetX = random(goalX + 10, goalX + 180);
+            movingBall.targetY = random(goalY + 10, goalY + 130);
         }
     }
     // Ball glides from bag to goal
     if (movingBall) {
         glideBallToGoal();
     }
-
     // Incrementally move the basketball based on the current second
-    ballX = map(currentSecond, 0, 59, 50, hoopX - 20); // Map seconds to ball's X position
+    ballX = map(currentSecond, 0, 60, 50, hoopX - 20); // Map seconds to ball's X position
     ballY = height / 2.5;
+
+    // Check if the hour has changed
+    if (currentHour !== lastHour) {
+        lastHour = currentHour; // Update the last hour
+        resetGame(); // Call the reset function
+    }
 }
+
+function resetGame() {
+    soccerBalls = [];
+    ballBag = [];
+    movingBall = null; // Ensure no ball is set to move
+    glideStartTime = null; // Reset the glide start time
+
+    // Re-fetch the current time to reset timing variables correctly
+    lastMinute = minute();
+    lastHour = hour();
+
+    setup(); // Re-initialize all settings
+}
+
 
 function drawTitle() {
     fill(255);
@@ -108,12 +110,12 @@ function drawGoal() {
     line(goalX, goalY, goalX, goalY + 150);
     line(goalX + 200, goalY, goalX + 200, goalY + 150);
 
-    line(goalX, goalY + 150, goalX + 200, goalY + 150); 
+    line(goalX, goalY + 150, goalX + 200, goalY + 150);
 
     // Draw the soccer goal net
     strokeWeight(1);
-    for (let x = goalX; x <= goalX + 200; x += 20) { 
-        line(x, goalY, x, goalY + 150); 
+    for (let x = goalX; x <= goalX + 200; x += 20) {
+        line(x, goalY, x, goalY + 150);
     }
     for (let y = goalY; y <= goalY + 150; y += 20) {
         line(goalX, y, goalX + 200, y);
@@ -124,7 +126,7 @@ function drawHoop() {
     noFill();
     stroke(255, 100, 100); // Red hoop color
     strokeWeight(5);
-    ellipse(hoopX, hoopY, 60, 20); 
+    ellipse(hoopX, hoopY, 60, 20);
 }
 
 
@@ -171,7 +173,7 @@ function glideBallToGoal() {
         soccerBalls.push(movingBall); // Add the ball to the soccer goal
         movingBall = null; // Stop moving the ball
     } else {
-        let t = elapsedTime / glideDuration; 
+        let t = elapsedTime / glideDuration;
         movingBall.x = lerp(movingBall.x, movingBall.targetX, t);
         movingBall.y = lerp(movingBall.y, movingBall.targetY, t);
 
@@ -183,17 +185,17 @@ function glideBallToGoal() {
 }
 
 function refillBag() {
-    // Refill the bag with 59 balls with random placement inside the bag
+    // Initialize the bag of 60 balls with random positions inside the bag
     ballBag = [];
-    for (let i = 0; i < 60; i++) {
+    let currentMinute = minute()
+    for (let i = 0; i < 60 - currentMinute; i++) {
         let x, y;
 
         // Ensure the ball is within the bag boundaries
         do {
-            x = random(78, 258); // Horizontal range between the sides of the bag
-            y = random(height - 220, height - 155); // Randomize y positions within the vertical range
-
-        } while (!isInsideBag(x, y)); // Only add if the ball is inside the bag boundary
+            x = random(78, 258); // Horizontal range 
+            y = random(height - 130, height - 65); // Vertical range 
+        } while (!isInsideBag(x, y));
 
         ballBag.push({ x, y });
     }
@@ -202,7 +204,7 @@ function refillBag() {
 function isInsideBag(x, y) {
     // Bag boundaries
     let centerX = 170;
-    let centerY = goalY + 75; 
+    let centerY = goalY + 75;
     let radiusX = 90;
     let radiusY = 50;
 
@@ -220,15 +222,20 @@ function isInsideBag(x, y) {
 }
 
 function drawCrowd() {
-    let currentHour = hour(); 
-    let crowdWidth = currentHour * 20; 
+    let currentHour = hour();
+    let crowdWidth = (currentHour % 12) * 20;
     let crowdXStart = (width - crowdWidth) / 2;
     let crowdYStart = height - 40; // Position the crowd at the bottom of the canvas
-    let crowdSpacing = 20; 
+    let crowdSpacing = 20;
 
-    // Draw crowd members equal to the current hour
-    for (let i = 0; i < currentHour; i++) {
-        let x = crowdXStart + (i % 12) * crowdSpacing; 
+    // Draw crowd members equal to the current hour in 12 hour format
+
+    let crowdCount = currentHour % 12;
+    if (crowdCount === 0) {
+        crowdCount = 12;
+    }
+    for (let i = 0; i < crowdCount; i++) {
+        let x = crowdXStart + (i % 12) * crowdSpacing;
         let y = crowdYStart + floor(i / 12) * crowdSpacing;
 
         // Draw a crowd member (simple circle representing the head)

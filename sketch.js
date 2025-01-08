@@ -49,12 +49,18 @@ function draw() {
     let currentHour = hour();
     let currentSecond = second();
 
+    if (currentHour !== lastHour) {
+        lastHour = currentHour;
+        soccerBalls = []; // Clear all soccer balls from the goal
+        refillBag(); // Refill the bag with 60 balls
+    }
+
     // Trigger gliding when the minute changes
     if (currentMinute !== lastMinute) {
         lastMinute = currentMinute; // Update the last minute
         console.log(currentMinute); // Print the current minute to the console
 
-        if (ballBag.length > 1) {
+        if (ballBag.length > 1 && lastMinute != 0) {
             glideStartTime = millis();
             movingBall = ballBag.pop();
             movingBall.targetX = random(goalX + 10, goalX + 180);
@@ -69,26 +75,7 @@ function draw() {
     ballX = map(currentSecond, 0, 60, 50, hoopX - 20); // Map seconds to ball's X position
     ballY = height / 2.5;
 
-    // Check if the hour has changed
-    if (currentHour !== lastHour) {
-        lastHour = currentHour; // Update the last hour
-        resetGame(); // Call the reset function
-    }
 }
-
-function resetGame() {
-    soccerBalls = [];
-    ballBag = [];
-    movingBall = null; // Ensure no ball is set to move
-    glideStartTime = null; // Reset the glide start time
-
-    // Re-fetch the current time to reset timing variables correctly
-    lastMinute = minute();
-    lastHour = hour();
-
-    setup(); // Re-initialize all settings
-}
-
 
 function drawTitle() {
     fill(255);
